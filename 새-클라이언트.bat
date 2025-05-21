@@ -1,0 +1,3 @@
+echo [🖥️] 클라이언트 실행...
+cd /d "C:\Users\oural\Desktop\대면비대면\4학년 1학기\bufschat"
+start cmd /k "call mvnw.cmd exec:java -Dexec.mainClass=com.example.bufschat.client.StompChatClient"
