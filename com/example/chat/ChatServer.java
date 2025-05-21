@@ -19,6 +19,7 @@ public class ChatServer {
         List<PrintWriter> outList = Collections.synchronizedList(new ArrayList<>());
         while (true) {
             Socket socket = serverSocket.accept(); // 클라이언트와 통신하기위해
+            System.err.println("어서오세요\n");
             System.err.println("접속 : "+ socket);
 
             ChatThread chatThread = new ChatThread(socket, outList); //serverSocket이 접솔할때마다 socket을 가지고 ChatThread한테 별도로 이 socket과 통신하라고 하는 것
