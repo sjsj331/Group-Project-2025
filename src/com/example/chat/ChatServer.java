@@ -14,7 +14,7 @@ import java.util.concurrent.ExecutionException;
 
 public class ChatServer { 
     public static void main(String[] args) throws Exception {
-        ServerSocket serverSocket = new ServerSocket(9998);
+        ServerSocket serverSocket = new ServerSocket(23456);
         // 공유 객체에서 쓰레드에 안전한 리스트를 만든다.
         List<PrintWriter> outList = Collections.synchronizedList(new ArrayList<>());
         while (true) {

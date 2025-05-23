@@ -7,46 +7,48 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-// java com.example.chat.ChatClient kim->이게 이름이 됨됨
+
 public class ChatClient { 
     public static void main(String[] args) throws Exception {
-        String name = args[0];
+         System.out.print("닉네임을 입력하세요: ");
+         BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in));
+         String name = keyboard.readLine().trim();
 
-        Socket socket = new Socket("127.0.0.1",9999);
+         Socket socket = new Socket("127.0.0.1", 23456);
+         PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
+         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-        PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in));
+          // 3) 서버로부터 오는 메시지를 별도의 스레드에서 읽기
+         new InputThread(in).start();
 
-        String line = null;
-        InputThread inputThread = new InputThread(in);
-        inputThread.start();
-
-
-        while ((line = keyboard.readLine()) != null) {
-            out.println(name + " : " + line);
-            out.flush();
-            
+         // 4) 사용자 입력을 읽고, 항상 "닉네임: 메시지" 형식으로 전송
+         String line;
+         while ((line = keyboard.readLine()) != null) {
+             if (line.isEmpty()) continue;  // 빈줄은 전송하지 않음
+             out.println(name + ": " + line);
         }
 
+     socket.close();
     }
 
 }
 
+
+
 class InputThread extends Thread {
-    BufferedReader in = null;
-    public InputThread(BufferedReader in){
+    private BufferedReader in;
+    public InputThread(BufferedReader in) {
         this.in = in;
     }
 
     @Override
-    public void run(){
-        try{
-            String line = null;
+    public void run() {
+        try {
+            String line;
             while ((line = in.readLine()) != null) {
                 System.out.println(line);
             }
-        }catch(Exception ex){
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
         

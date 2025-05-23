@@ -12,7 +12,7 @@ public class ChatClient {
     public static void main(String[] args) throws Exception {
         String name = args[0];
 
-        Socket socket = new Socket("127.0.0.1",9999);
+        Socket socket = new Socket("127.0.0.1",23456);
 
         PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
