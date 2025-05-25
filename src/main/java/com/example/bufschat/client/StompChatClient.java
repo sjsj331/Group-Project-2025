@@ -19,7 +19,7 @@ import java.util.concurrent.Future;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-
+// PR 시범 테스트 
 public class StompChatClient extends JFrame {
 
     private JTextArea chatArea;
