@@ -16,9 +16,6 @@ import java.awt.*;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-
 
 
 
@@ -61,9 +58,10 @@ public class StompChatClient extends JFrame {
 
         // 🔧 비율 조정된 splitPane (80% : 20%)
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, chatScrollPane, userPanel);
-        splitPane.setResizeWeight(0.85); // 메시지창 85%
+        splitPane.setResizeWeight(0.8);
         splitPane.setDividerSize(5);
-        splitPane.setEnabled(false);
+        splitPane.setEnabled(false); // 사용자 비율 조정 막기
+
         mainPanel.add(splitPane, BorderLayout.CENTER);
 
         // 입력창 + 버튼
@@ -71,7 +69,6 @@ public class StompChatClient extends JFrame {
         messageField = new JTextField();
         JButton sendButton = new JButton("전송");
 
-        sendButton.setPreferredSize(new Dimension(100, 60));
         sendButton.setForeground(Color.BLACK);
         sendButton.setBackground(new Color(170, 255, 255));
         sendButton.setOpaque(true);
@@ -87,30 +84,6 @@ public class StompChatClient extends JFrame {
 
         setVisible(true);
         connectStomp();
-
-        addWindowListener(new WindowAdapter() {
-        @Override
-            public void windowClosing(WindowEvent e) {
-                if (session != null && session.isConnected()) {
-                    session.send("/app/leave", new ChatMessage(username, ""));
-                }
-                super.windowClosing(e); // 창 닫힘 처리
-            }
-        });
-
-        JButton exitButton = new JButton("나가기");
-        exitButton.setForeground(Color.DARK_GRAY);
-        exitButton.setBackground(Color.LIGHT_GRAY);
-        exitButton.setPreferredSize(new Dimension(100, 30));
-        exitButton.addActionListener(e -> {
-            if (session != null && session.isConnected()) {
-                session.send("/app/leave", new ChatMessage(username, ""));
-            }
-            dispose(); // 창 닫기
-        });
-
-        mainPanel.add(exitButton, BorderLayout.NORTH); // 상단에 추가
-
     }
 
     private void connectStomp() {
@@ -159,39 +132,15 @@ public class StompChatClient extends JFrame {
     }
 
     public class MyStompSessionHandler extends StompSessionHandlerAdapter {
-
    @Override
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
     StompChatClient.this.session = session;
     System.out.println("✅ STOMP 연결 성공: " + session.getSessionId());
 
+    // ✅ 1. 서버에 접속 알림
     session.send("/app/join", new ChatMessage(username, ""));
 
-    // 사용자 목록 응답을 받을 구독 설정
-    session.subscribe("/user/queue/users", new StompFrameHandler() {
-        @Override
-        public java.lang.reflect.Type getPayloadType(StompHeaders headers) {
-            return new TypeReference<List<String>>() {}.getType();
-        }
-
-        @Override
-        public void handleFrame(StompHeaders headers, Object payload) {
-            @SuppressWarnings("unchecked")
-            List<String> users = (List<String>) payload;
-            SwingUtilities.invokeLater(() -> {
-                userListModel.clear();
-                for (String u : users) {
-                    userListModel.addElement(u);
-                }
-            });
-        }
-    });
-
-// 사용자 목록 요청 전송
-session.send("/app/requestUsers", null);
-
-
-
+    // ✅ 2. 채팅 메시지 구독
     session.subscribe("/topic/messages", new StompFrameHandler() {
         @Override
         public Class<ChatMessage> getPayloadType(StompHeaders headers) {
@@ -202,18 +151,11 @@ session.send("/app/requestUsers", null);
         public void handleFrame(StompHeaders headers, Object payload) {
             ChatMessage msg = (ChatMessage) payload;
             SwingUtilities.invokeLater(() -> {
-                String line;
-
-                if ("시스템".equals(msg.getSender())) {
-                    line = "[알림] " + msg.getContent() + "\n";
-                    chatArea.setForeground(Color.GRAY);
+                String line = msg.getSender() + ": " + msg.getContent() + "\n";
+                if (!msg.getSender().equals(username)) {
+                    chatArea.setForeground(Color.BLUE);
                 } else {
-                    line = msg.getSender() + ": " + msg.getContent() + "\n";
-                    if (!msg.getSender().equals(username)) {
-                        chatArea.setForeground(Color.BLUE);
-                    } else {
-                        chatArea.setForeground(Color.BLACK);
-                    }
+                    chatArea.setForeground(Color.BLACK);
                 }
                 chatArea.append(line);
                 });
@@ -231,7 +173,6 @@ session.send("/app/requestUsers", null);
         public void handleFrame(StompHeaders headers, Object payload) {
             @SuppressWarnings("unchecked")
             List<String> users = (List<String>) payload;
-
             SwingUtilities.invokeLater(() -> {
                 userListModel.clear();
                 for (String u : users) {
