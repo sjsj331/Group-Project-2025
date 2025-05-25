@@ -24,6 +24,7 @@ import java.awt.event.WindowEvent;
 
 
 
+@SuppressWarnings("unused")
 public class StompChatClient extends JFrame {
 
     private JTextArea chatArea;
@@ -114,6 +115,7 @@ public class StompChatClient extends JFrame {
 
     }
 
+    @SuppressWarnings("removal")
     private void connectStomp() {
         WebSocketStompClient stompClient = new WebSocketStompClient(new StandardWebSocketClient());
         stompClient.setMessageConverter(new MappingJackson2MessageConverter());

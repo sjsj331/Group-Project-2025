@@ -1,10 +1,11 @@
-package src.main.java.com.example.bufschat.client/;
+package com.example.bufschat.client;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.io.PrintWriter;
 
+@SuppressWarnings("unused")
 public class EmojiPanel {
     private final JDialog emojiDialog;
     private final PrintWriter out;
