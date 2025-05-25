@@ -9,7 +9,7 @@ import java.net.Socket;
 
 // java com.example.chat.ChatClient kim->이게 이름이 됨됨
 public class ChatClient { 
-    public static void main(String[] args) throws Exception {
+    public static void Main(String[] args) throws Exception {
         String name = args[0];
 
         Socket socket = new Socket("127.0.0.1",9999);
