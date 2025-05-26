@@ -13,13 +13,15 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import javax.swing.*;
+import javax.swing.text.BadLocationException;// 추가
+import javax.swing.text.StyledDocument; // 추가
 import java.awt.*;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-
+import java.io.PrintStream;
 
 
 
@@ -27,12 +29,13 @@ import java.awt.event.WindowEvent;
 @SuppressWarnings("unused")
 public class StompChatClient extends JFrame {
 
-    private JTextArea chatArea;
+    private JTextPane chatArea;// JTextArea -> JTextPane
     private JTextField messageField;
     private JList<String> userList;
     private DefaultListModel<String> userListModel;
     private String username;
     private StompSession session;
+    private EmojiPanel emojiPanel;// 추가
 
     public StompChatClient(String username) {
         this.username = username;
@@ -44,8 +47,8 @@ public class StompChatClient extends JFrame {
         JPanel mainPanel = new JPanel(new BorderLayout());
         setContentPane(mainPanel);
 
-        // 🔵 채팅 영역
-        chatArea = new JTextArea();
+        // ✅ 채팅 영역 (JTextPane)
+        chatArea = new JTextPane();//변경
         chatArea.setEditable(false);
         JScrollPane chatScrollPane = new JScrollPane(chatArea);
 
@@ -78,6 +81,32 @@ public class StompChatClient extends JFrame {
         sendButton.setBackground(new Color(170, 255, 255));
         sendButton.setOpaque(true);
         sendButton.setBorderPainted(false);
+        
+        
+        //추가된거
+        
+        JButton emojiButton = new JButton("😊");
+        emojiButton.setPreferredSize(new Dimension(60, 60));
+        emojiButton.setForeground(Color.BLACK);
+        emojiButton.setBackground(new Color(255, 230, 230));
+        emojiButton.setOpaque(true);
+        emojiButton.setBorderPainted(false);
+
+        emojiPanel = new EmojiPanel(
+                this,
+                (dest, msg) -> {
+                    if (session != null && session.isConnected()) {
+                        session.send(dest, msg);
+                    }
+                },
+                username,
+                chatArea,
+                chatScrollPane
+        );
+
+        emojiButton.addActionListener(e -> emojiPanel.show());
+        inputPanel.add(emojiButton, BorderLayout.WEST);
+        //여기까지
 
         inputPanel.add(messageField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
@@ -115,7 +144,7 @@ public class StompChatClient extends JFrame {
 
     }
 
-    @SuppressWarnings("removal")
+    
     private void connectStomp() {
         WebSocketStompClient stompClient = new WebSocketStompClient(new StandardWebSocketClient());
         stompClient.setMessageConverter(new MappingJackson2MessageConverter());
@@ -181,11 +210,15 @@ public class StompChatClient extends JFrame {
         public void handleFrame(StompHeaders headers, Object payload) {
             @SuppressWarnings("unchecked")
             List<String> users = (List<String>) payload;
-            SwingUtilities.invokeLater(() -> {
-                userListModel.clear();
-                for (String u : users) {
-                    userListModel.addElement(u);
-                }
+            ChatMessage msg = (ChatMessage) payload; // 추가
+                SwingUtilities.invokeLater(() -> { // 추가 
+                emojiPanel.renderIncomingMessage(msg);
+                SwingUtilities.invokeLater(() -> {
+                    userListModel.clear();
+                    for (String u : users) {
+                        userListModel.addElement(u);
+                    }
+                });
             });
         }
     });
@@ -201,7 +234,7 @@ session.send("/app/requestUsers", null);
             return ChatMessage.class;
         }
 
-        @Override
+        @Override //여기서 부터터
         public void handleFrame(StompHeaders headers, Object payload) {
             ChatMessage msg = (ChatMessage) payload;
             SwingUtilities.invokeLater(() -> {
@@ -218,10 +251,15 @@ session.send("/app/requestUsers", null);
                         chatArea.setForeground(Color.BLACK);
                     }
                 }
-                chatArea.append(line);
-                });
-            }
-    });
+                try {
+                    StyledDocument doc = chatArea.getStyledDocument();
+                    doc.insertString(doc.getLength(), line, null);
+                } catch (BadLocationException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+    }); //여기까지 변경경
 
     // ✅ 3. 사용자 목록 구독
     session.subscribe("/topic/users", new StompFrameHandler() {
@@ -260,7 +298,13 @@ session.send("/app/requestUsers", null);
         public void setSender(String sender) { this.sender = sender; }
         public void setContent(String content) { this.content = content; }
     }
+
+    @Override
+    public String toString() {
+        return "MyStompSessionHandler []";
     }
+    }
+    
 
 
 
