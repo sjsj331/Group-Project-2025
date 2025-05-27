@@ -20,31 +20,26 @@ public class ChatController {
 
     @MessageMapping("/join")
     public synchronized void handleJoin(ChatMessage msg) {
+        // ⚫️ 사용자 목록을 먼저 갱신
         userSet.add(msg.getSender());
-
-        // ✅ 모든 유저에게 사용자 목록 갱신 전송
         template.convertAndSend("/topic/users", new ArrayList<>(userSet));
 
-        // ✅ 모든 유저에게 입장 메시지 전송
+        // ✅ 입장 메시지를 나중에 전송
         ChatMessage joinNotice = new ChatMessage("시스템", msg.getSender() + "님이 입장했습니다.");
         template.convertAndSend("/topic/messages", joinNotice);
     }
 
-
-    @MessageMapping("/send") 
+    @MessageMapping("/send")
     public void handleMessage(ChatMessage msg) {
         System.out.println("📩 받은 메시지: " + msg.getSender() + ": " + msg.getContent());
-
         template.convertAndSend("/topic/messages", msg);
     }
-
 
     @MessageMapping("/requestUsers")
     @SendToUser("/queue/users")
     public List<String> handleUserListRequest() {
         return new ArrayList<>(userSet);
     }
-
 
     @MessageMapping("/leave")
     public void handleLeave(ChatMessage msg) {
@@ -54,8 +49,4 @@ public class ChatController {
         ChatMessage leaveMsg = new ChatMessage("시스템", msg.getSender() + "님이 퇴장했습니다.");
         template.convertAndSend("/topic/messages", leaveMsg);
     }
-
-
-
-    
 }

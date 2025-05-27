@@ -4,8 +4,6 @@ import com.example.bufschat.model.ChatMessage;
 
 import javax.swing.*;
 import javax.swing.text.*;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.StyledDocument;
 import java.awt.*;
 import java.net.URL;
 import java.util.HashMap;
@@ -38,13 +36,15 @@ public class EmojiPanel {
                 continue;
             }
             ImageIcon icon = new ImageIcon(imageUrl);
-            emojiIconMap.put(path, icon);
-            Image scaled = icon.getImage().getScaledInstance(30, 30, Image.SCALE_SMOOTH);
-            JButton emojiBtn = new JButton(new ImageIcon(scaled));
+            Image scaledImage = icon.getImage().getScaledInstance(30, 30, Image.SCALE_SMOOTH);
+            ImageIcon scaledIcon = new ImageIcon(scaledImage);
+
+            emojiIconMap.put(path, scaledIcon);
+
+            JButton emojiBtn = new JButton(scaledIcon);
             emojiBtn.setPreferredSize(new Dimension(40, 40));
 
             emojiBtn.addActionListener(e -> {
-                insertEmojiToChatArea(userName + ": ", icon);
                 if (sendFunction != null) {
                     sendFunction.accept("/app/send", new ChatMessage(userName, "[이모티콘]" + path));
                 }
@@ -76,30 +76,55 @@ public class EmojiPanel {
     }
 
     public void renderIncomingMessage(com.example.bufschat.client.StompChatClient.MyStompSessionHandler.ChatMessage msg) {
-        String content = msg.getContent();
-        if (content.startsWith("[이모티콘]")) {
-            String path = content.substring("[이모티콘]".length());
-            ImageIcon icon = emojiIconMap.get(path);
-            if (icon != null) {
-                insertEmojiToChatArea(msg.getSender() + ": ", icon);
-                return;
+        SwingUtilities.invokeLater(() -> {
+            String content = msg.getContent();
+            if (content.startsWith("[이모티콘]")) {
+                String path = content.substring("[이모티콘]".length());
+                ImageIcon icon = emojiIconMap.get(path);
+                if (icon != null) {
+                    insertEmojiToChatArea(msg.getSender() + ": ", icon);
+                } else {
+                    try {
+                        StyledDocument doc = chatArea.getStyledDocument();
+                        doc.insertString(doc.getLength(), msg.getSender() + ": [이모티콘 표시 실패: " + path + "]\n", null);
+                    } catch (BadLocationException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                try {
+                    StyledDocument doc = chatArea.getStyledDocument();
+                    doc.insertString(doc.getLength(), msg.getSender() + ": " + content + "\n", null);
+                } catch (BadLocationException e) {
+                    e.printStackTrace();
+                }
             }
-        }
-        try {
-            StyledDocument doc = chatArea.getStyledDocument();
-            doc.insertString(doc.getLength(), msg.getSender() + ": " + content + "\n", null);
-        } catch (BadLocationException e) {
-            e.printStackTrace();
-        }
+        });
     }
 
     public void renderIncomingMessage(ChatMessage message) {
         SwingUtilities.invokeLater(() -> {
-            StyledDocument doc = chatArea.getStyledDocument();
-            try {
-                doc.insertString(doc.getLength(), message.getSender() + ": " + message.getContent() + "\n", null);
-            } catch (BadLocationException e) {
-                e.printStackTrace();
+            String content = message.getContent();
+            if (content.startsWith("[이모티콘]")) {
+                String path = content.substring("[이모티콘]".length());
+                ImageIcon icon = emojiIconMap.get(path);
+                if (icon != null) {
+                    insertEmojiToChatArea(message.getSender() + ": ", icon);
+                } else {
+                    try {
+                        StyledDocument doc = chatArea.getStyledDocument();
+                        doc.insertString(doc.getLength(), message.getSender() + ": [이모티콘 표시 실패: " + path + "]\n", null);
+                    } catch (BadLocationException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                try {
+                    StyledDocument doc = chatArea.getStyledDocument();
+                    doc.insertString(doc.getLength(), message.getSender() + ": " + content + "\n", null);
+                } catch (BadLocationException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }

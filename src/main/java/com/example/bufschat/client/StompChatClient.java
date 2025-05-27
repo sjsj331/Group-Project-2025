@@ -14,6 +14,9 @@ import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;// 추가
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.Style;
 import javax.swing.text.StyledDocument; // 추가
 import java.awt.*;
 import java.util.List;
@@ -63,6 +66,7 @@ public class StompChatClient extends JFrame {
         JPanel userPanel = new JPanel(new BorderLayout());
         userPanel.add(userLabel, BorderLayout.NORTH);
         userPanel.add(new JScrollPane(userList), BorderLayout.CENTER);
+        
 
         // 🔧 비율 조정된 splitPane (80% : 20%)
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, chatScrollPane, userPanel);
@@ -210,50 +214,55 @@ public class StompChatClient extends JFrame {
         public void handleFrame(StompHeaders headers, Object payload) {
             @SuppressWarnings("unchecked")
             List<String> users = (List<String>) payload;
-            ChatMessage msg = (ChatMessage) payload; // 추가
-                SwingUtilities.invokeLater(() -> { // 추가 
-                emojiPanel.renderIncomingMessage(msg);
-                SwingUtilities.invokeLater(() -> {
-                    userListModel.clear();
-                    for (String u : users) {
-                        userListModel.addElement(u);
-                    }
-                });
+
+            SwingUtilities.invokeLater(() -> {
+                userListModel.clear();
+                for (String u : users) {
+                    userListModel.addElement(u);
+                }
             });
         }
     });
 
-// 사용자 목록 요청 전송
-session.send("/app/requestUsers", null);
+    // 사용자 목록 요청 전송
+    session.send("/app/requestUsers", null);
 
 
 
     session.subscribe("/topic/messages", new StompFrameHandler() {
-        @Override
-        public Class<ChatMessage> getPayloadType(StompHeaders headers) {
-            return ChatMessage.class;
-        }
+    @Override
+    public Class<ChatMessage> getPayloadType(StompHeaders headers) {
+        return ChatMessage.class;
+    }
 
-        @Override //여기서 부터터
+    @Override
         public void handleFrame(StompHeaders headers, Object payload) {
             ChatMessage msg = (ChatMessage) payload;
             SwingUtilities.invokeLater(() -> {
-                String line;
+                String sender = msg.getSender();
+                String content = msg.getContent();
 
-                if ("시스템".equals(msg.getSender())) {
-                    line = "[알림] " + msg.getContent() + "\n";
-                    chatArea.setForeground(Color.GRAY);
-                } else {
-                    line = msg.getSender() + ": " + msg.getContent() + "\n";
-                    if (!msg.getSender().equals(username)) {
-                        chatArea.setForeground(Color.BLUE);
-                    } else {
-                        chatArea.setForeground(Color.BLACK);
-                    }
+                if (content.startsWith("[이모티콘]")) {
+                    // 이모티콘이면 이모티콘만 표시하고 텍스트 생략
+                    emojiPanel.renderIncomingMessage(msg);
+                    return;
                 }
+
+                String line = sender + ": " + content + "\n";
+
                 try {
                     StyledDocument doc = chatArea.getStyledDocument();
-                    doc.insertString(doc.getLength(), line, null);
+                    Style style = doc.addStyle("Style", null);
+
+                    if ("시스템".equals(sender)) {
+                        StyleConstants.setForeground(style, Color.GRAY);
+                    } else if (!sender.equals(username)) {
+                        StyleConstants.setForeground(style, Color.BLUE);
+                    } else {
+                        StyleConstants.setForeground(style, Color.BLACK);
+                    }
+
+                    doc.insertString(doc.getLength(), line, style);
                 } catch (BadLocationException e) {
                     e.printStackTrace();
                 }
@@ -281,6 +290,7 @@ session.send("/app/requestUsers", null);
             });
         }
     });
+
 }
 
     public static class ChatMessage {
