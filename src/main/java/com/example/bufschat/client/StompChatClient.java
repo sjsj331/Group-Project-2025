@@ -6,6 +6,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import javax.swing.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -16,6 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import cloudThread.CloudPanel;
+
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
@@ -25,8 +30,6 @@ import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
-<<<<<<< HEAD
-=======
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
@@ -35,15 +38,15 @@ import java.util.concurrent.Future;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
->>>>>>> 5e9051e6a9fb516d477b449c432315e8f244964b
 public class StompChatClient extends JFrame {
 
-    private JTextArea chatArea;
+    private JTextPane chatArea;
     private JTextField messageField;
     private JList<String> userList;
     private DefaultListModel<String> userListModel;
     private String username;
     private StompSession session;
+    private EmojiPanel emojiPanel;
 
     public StompChatClient(String username) {
         this.username = username;
@@ -51,12 +54,20 @@ public class StompChatClient extends JFrame {
         setTitle("Java 채팅앱 - " + username);
         setSize(800, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        
+     // 1. RainPanel 생성 //
+        CloudPanel rainPanel = new CloudPanel();
+        rainPanel.setBounds(0, 0, 800, 600); // 프레임 전체 영역
+
+        // 2. JLayeredPane 설정 //
+        JLayeredPane layeredPane = getLayeredPane();
+        layeredPane.add(rainPanel, new Integer(0)); // 가장 아래 레이어에 추가
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         setContentPane(mainPanel);
 
         // 채팅 영역
-        chatArea = new JTextArea();
+        chatArea = new JTextPane();
         chatArea.setEditable(false);
         JScrollPane chatScrollPane = new JScrollPane(chatArea);
 
@@ -83,6 +94,8 @@ public class StompChatClient extends JFrame {
         JPanel inputPanel = new JPanel(new BorderLayout());
         messageField = new JTextField();
         JButton sendButton = new JButton("전송");
+        
+        
 
         sendButton.setPreferredSize(new Dimension(100, 60));
         sendButton.setForeground(Color.BLACK);
@@ -92,7 +105,29 @@ public class StompChatClient extends JFrame {
 
         inputPanel.add(messageField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
-
+        
+        JButton emojiButton = new JButton("😊");
+        emojiButton.setPreferredSize(new Dimension(60, 60));
+        emojiButton.setForeground(Color.BLACK);
+        emojiButton.setBackground(new Color(255, 230, 230));
+        emojiButton.setOpaque(true);
+        emojiButton.setBorderPainted(false);
+        
+     // EmojiPanel 생성
+        emojiPanel = new EmojiPanel(
+            this,
+            (dest, msg) -> {
+                if (session != null && session.isConnected()) {
+                    session.send(dest, msg);
+                }
+            },
+            username,
+            chatArea,
+            // chatScrollPane는 생성자 내 지역변수라서, 위에 멤버 변수로 분리하거나 아래와 같이 참조 필요
+            null // chatScrollPane 변수를 멤버변수로 바꾸거나, 생성자에 전달하는 방법을 사용하세요.
+        );
+        emojiButton.addActionListener(e -> emojiPanel.show());
+        inputPanel.add(emojiButton, BorderLayout.WEST);
         mainPanel.add(inputPanel, BorderLayout.SOUTH);
 
         sendButton.addActionListener(e -> sendMessage());
@@ -100,6 +135,8 @@ public class StompChatClient extends JFrame {
 
         setVisible(true);
         connectStomp();
+        
+        
 
         addWindowListener(new WindowAdapter() {
             @Override
@@ -228,7 +265,13 @@ public class StompChatClient extends JFrame {
                             chatArea.setForeground(msg.getSender().equals(username) ? Color.BLACK : Color.BLUE);
                         }
 
-                        chatArea.append(line);
+                        try {
+                            Document doc = chatArea.getDocument();
+                            doc.insertString(doc.getLength(), line, null);  // 텍스트 추가
+                            chatArea.setCaretPosition(doc.getLength());    // 맨 아래로 스크롤
+                        } catch (BadLocationException e) {
+                            e.printStackTrace();
+                        }
                     });
                 }
             });
