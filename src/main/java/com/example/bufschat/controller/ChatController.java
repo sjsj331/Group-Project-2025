@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -64,4 +66,13 @@ public class ChatController {
         leaveNotice.setTimestamp(LocalDateTime.now());
         template.convertAndSend("/topic/messages", leaveNotice);
     }
+
+    @RestController
+    public class RootController {
+        @GetMapping("/")
+        public String home() {
+            return "Bufschat API is up and running!";
+        }
+    }
+
 }

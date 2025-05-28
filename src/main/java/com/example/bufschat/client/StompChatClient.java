@@ -150,22 +150,28 @@ public class StompChatClient extends JFrame {
     }
 
     private void connectStomp() {
-        WebSocketStompClient stompClient = new WebSocketStompClient(new StandardWebSocketClient());
+    WebSocketStompClient stompClient = new WebSocketStompClient(new StandardWebSocketClient());
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    // ObjectMapper 설정 (날짜/시간 포맷 처리)
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new JavaTimeModule());
+    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-        MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
-        converter.setObjectMapper(mapper);
+    // 메시지 변환기 설정
+    MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
+    converter.setObjectMapper(mapper);
 
-        stompClient.setMessageConverter(converter);
+    stompClient.setMessageConverter(converter);
 
-        Future<StompSession> future = stompClient.connect(
-                "ws://localhost:8080/chat",
-                new WebSocketHttpHeaders(),
-                new MyStompSessionHandler()
-        );
+    // Heroku 애플리케이션의 WebSocket URL
+    String url = "wss://limitless-dusk-76139-5d47808bee03.herokuapp.com/chat";  // Heroku에서 제공하는 URL을 사용합니다.
+
+    // WebSocket 서버와 연결
+    Future<StompSession> future = stompClient.connect(
+            url, // WebSocket URL
+            new WebSocketHttpHeaders(), // 헤더
+            new MyStompSessionHandler() // 세션 핸들러
+    );
 
         try {
             this.session = future.get();
