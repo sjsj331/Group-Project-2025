@@ -6,6 +6,7 @@ import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
 import java.net.URL;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -74,32 +75,39 @@ public class EmojiPanel {
             e.printStackTrace();
         }
     }
-    public void renderIncomingMessage1(ChatMessage msg) {
-        SwingUtilities.invokeLater(() -> {
-            String content = msg.getContent();
-            if (content.startsWith("[이모티콘]")) {
-                String path = content.substring("[이모티콘]".length());
-                ImageIcon icon = emojiIconMap.get(path);
-                if (icon != null) {
-                    insertEmojiToChatArea(msg.getSender() + ": ", icon);
-                } else {
-                    try {
-                        StyledDocument doc = chatArea.getStyledDocument();
-                        doc.insertString(doc.getLength(), msg.getSender() + ": [이모티콘 표시 실패: " + path + "]\n", null);
-                    } catch (BadLocationException e) {
-                        e.printStackTrace();
+            public void renderIncomingMessage1(ChatMessage msg) {
+            SwingUtilities.invokeLater(() -> {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+                String time = msg.getTimestamp() != null ? msg.getTimestamp().format(formatter) : "??:??:??";
+                String prefix = "[" + time + "] " + msg.getSender() + ": ";
+
+                String content = msg.getContent();
+
+                    if (content.startsWith("[이모티콘]")) {
+                        String path = content.substring("[이모티콘]".length());
+                        ImageIcon icon = emojiIconMap.get(path);
+                        if (icon != null) {
+                            insertEmojiToChatArea(prefix, icon);
+                        } else {
+                            try {
+                                StyledDocument doc = chatArea.getStyledDocument();
+                                doc.insertString(doc.getLength(), prefix + "[이모티콘 표시 실패: " + path + "]\n", null);
+                            } catch (BadLocationException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    } else {
+                        try {
+                            StyledDocument doc = chatArea.getStyledDocument();
+                            doc.insertString(doc.getLength(), prefix + content + "\n", null);
+                        } catch (BadLocationException e) {
+                            e.printStackTrace();
+                        }
                     }
-                }
-            } else {
-                try {
-                    StyledDocument doc = chatArea.getStyledDocument();
-                    doc.insertString(doc.getLength(), msg.getSender() + ": " + content + "\n", null);
-                } catch (BadLocationException e) {
-                    e.printStackTrace();
-                }
+                    chatArea.setCaretPosition(chatArea.getDocument().getLength());
+                });
             }
-        });
-    }
+
 
     public void renderIncomingMessage(ChatMessage message) {
         SwingUtilities.invokeLater(() -> {
@@ -126,5 +134,10 @@ public class EmojiPanel {
                 }
             }
         });
+    }
+
+    public Object setVisible(boolean b) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setVisible'");
     }
 }

@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 
@@ -30,14 +31,6 @@ import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
-import javax.swing.*;
-import java.awt.*;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-
 public class StompChatClient extends JFrame {
 
     private JTextPane chatArea;
@@ -54,80 +47,76 @@ public class StompChatClient extends JFrame {
         setTitle("Java 채팅앱 - " + username);
         setSize(800, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        
-     // 1. RainPanel 생성 //
-        CloudPanel rainPanel = new CloudPanel();
-        rainPanel.setBounds(0, 0, 800, 600); // 프레임 전체 영역
 
-        // 2. JLayeredPane 설정 //
+        CloudPanel rainPanel = new CloudPanel();
+        rainPanel.setBounds(0, 0, 800, 600);
+
         JLayeredPane layeredPane = getLayeredPane();
-        layeredPane.add(rainPanel, new Integer(0)); // 가장 아래 레이어에 추가
+        layeredPane.add(rainPanel, new Integer(0));
 
         JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(new Color(250, 245, 239));
         setContentPane(mainPanel);
 
-        // 채팅 영역
         chatArea = new JTextPane();
         chatArea.setEditable(false);
+        chatArea.setBackground(new Color(243, 237, 231));
+        chatArea.setForeground(new Color(68, 44, 33));
         JScrollPane chatScrollPane = new JScrollPane(chatArea);
 
-        // 사용자 목록
         userListModel = new DefaultListModel<>();
         userList = new JList<>(userListModel);
-        userList.setForeground(Color.BLUE);
+        userList.setForeground(new Color(68, 44, 33));
+        userList.setBackground(new Color(243, 237, 231));
 
         JLabel userLabel = new JLabel("현재 들어와있는 사용자 목록", SwingConstants.CENTER);
-        userLabel.setForeground(Color.BLUE);
+        userLabel.setForeground(new Color(68, 44, 33));
 
         JPanel userPanel = new JPanel(new BorderLayout());
+        userPanel.setBackground(new Color(250, 245, 239));
         userPanel.add(userLabel, BorderLayout.NORTH);
         userPanel.add(new JScrollPane(userList), BorderLayout.CENTER);
+        ImageIcon logoIcon = new ImageIcon("src/main/resources/img/logo.png");
+        Image scaled = logoIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH); // fh
+        JLabel logoLabel = new JLabel(new ImageIcon(scaled));
+        userPanel.add(logoLabel, BorderLayout.SOUTH);
 
-        // Split pane
+
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, chatScrollPane, userPanel);
         splitPane.setResizeWeight(0.85);
         splitPane.setDividerSize(5);
         splitPane.setEnabled(false);
         mainPanel.add(splitPane, BorderLayout.CENTER);
 
-        // 입력창 + 버튼
         JPanel inputPanel = new JPanel(new BorderLayout());
+        inputPanel.setBackground(new Color(250, 245, 239));
         messageField = new JTextField();
+        messageField.setBackground(Color.WHITE);
+        messageField.setForeground(new Color(68, 44, 33));
+
         JButton sendButton = new JButton("전송");
-        
-        
-
         sendButton.setPreferredSize(new Dimension(100, 60));
-        sendButton.setForeground(Color.BLACK);
-        sendButton.setBackground(new Color(170, 255, 255));
+        sendButton.setForeground(Color.WHITE);
+        sendButton.setBackground(new Color(106, 60, 44));
         sendButton.setOpaque(true);
-        sendButton.setBorderPainted(false);
 
-        inputPanel.add(messageField, BorderLayout.CENTER);
-        inputPanel.add(sendButton, BorderLayout.EAST);
-        
         JButton emojiButton = new JButton("😊");
         emojiButton.setPreferredSize(new Dimension(60, 60));
         emojiButton.setForeground(Color.BLACK);
         emojiButton.setBackground(new Color(255, 230, 230));
         emojiButton.setOpaque(true);
-        emojiButton.setBorderPainted(false);
-        
-     // EmojiPanel 생성
-        emojiPanel = new EmojiPanel(
-            this,
-            (dest, msg) -> {
-                if (session != null && session.isConnected()) {
-                    session.send(dest, msg);
-                }
-            },
-            username,
-            chatArea,
-            // chatScrollPane는 생성자 내 지역변수라서, 위에 멤버 변수로 분리하거나 아래와 같이 참조 필요
-            null // chatScrollPane 변수를 멤버변수로 바꾸거나, 생성자에 전달하는 방법을 사용하세요.
-        );
+
+        emojiPanel = new EmojiPanel(this, (dest, msg) -> {
+            if (session != null && session.isConnected()) {
+                session.send(dest, msg);
+            }
+        }, username, chatArea, null);
+
         emojiButton.addActionListener(e -> emojiPanel.show());
+
         inputPanel.add(emojiButton, BorderLayout.WEST);
+        inputPanel.add(messageField, BorderLayout.CENTER);
+        inputPanel.add(sendButton, BorderLayout.EAST);
         mainPanel.add(inputPanel, BorderLayout.SOUTH);
 
         sendButton.addActionListener(e -> sendMessage());
@@ -135,8 +124,6 @@ public class StompChatClient extends JFrame {
 
         setVisible(true);
         connectStomp();
-        
-        
 
         addWindowListener(new WindowAdapter() {
             @Override
@@ -149,8 +136,8 @@ public class StompChatClient extends JFrame {
         });
 
         JButton exitButton = new JButton("나가기");
-        exitButton.setForeground(Color.DARK_GRAY);
-        exitButton.setBackground(Color.LIGHT_GRAY);
+        exitButton.setForeground(Color.WHITE);
+        exitButton.setBackground(new Color(164, 117, 81));
         exitButton.setPreferredSize(new Dimension(100, 30));
         exitButton.addActionListener(e -> {
             if (session != null && session.isConnected()) {
@@ -207,13 +194,28 @@ public class StompChatClient extends JFrame {
     }
 
     public static void main(String[] args) {
-        String id = JOptionPane.showInputDialog("닉네임 입력:");
+        ImageIcon rawIcon = new ImageIcon("src/main/resources/img/logo.png");
+        Image scaled = rawIcon.getImage().getScaledInstance(64, 64, Image.SCALE_SMOOTH);
+        ImageIcon icon = new ImageIcon(scaled);
+
+        UIManager.put("Button.background", new Color(212, 166, 120)); // 밝은 갈색
+        UIManager.put("Button.foreground", Color.DARK_GRAY);         // 글씨색
+
+
+        String id = (String) JOptionPane.showInputDialog(
+            null,
+            "닉네임을 입력하세요:",
+            "로그인",
+            JOptionPane.QUESTION_MESSAGE,
+            icon,
+            null,
+            null
+        );
         if (id != null && !id.isBlank()) {
             SwingUtilities.invokeLater(() -> new StompChatClient(id));
         }
     }
 
-    // ✅ 내부 핸들러 클래스
     public class MyStompSessionHandler extends StompSessionHandlerAdapter {
 
         @Override
@@ -251,28 +253,7 @@ public class StompChatClient extends JFrame {
                 @Override
                 public void handleFrame(StompHeaders headers, Object payload) {
                     ChatMessage msg = (ChatMessage) payload;
-                    SwingUtilities.invokeLater(() -> {
-                        String line;
-
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-                        String time = msg.getTimestamp() != null ? msg.getTimestamp().format(formatter) : "??:??:??";
-
-                        if ("시스템".equals(msg.getSender())) {
-                            line = "[" + time + "] [알림] " + msg.getContent() + "\n";
-                            chatArea.setForeground(Color.GRAY);
-                        } else {
-                            line = "[" + time + "] " + msg.getSender() + ": " + msg.getContent() + "\n";
-                            chatArea.setForeground(msg.getSender().equals(username) ? Color.BLACK : Color.BLUE);
-                        }
-
-                        try {
-                            Document doc = chatArea.getDocument();
-                            doc.insertString(doc.getLength(), line, null);  // 텍스트 추가
-                            chatArea.setCaretPosition(doc.getLength());    // 맨 아래로 스크롤
-                        } catch (BadLocationException e) {
-                            e.printStackTrace();
-                        }
-                    });
+                    emojiPanel.renderIncomingMessage1(msg);  // 출력하지 않도록 수정해야 함 (chatArea 조작 제거)
                 }
             });
         }
